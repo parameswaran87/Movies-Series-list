@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaVault Pro | Personal Tracker</title>
+    <style>
+        :root { --bg: #0b0b0b; --card: #161616; --accent: #00e5ff; --text: #f0f0f0; --danger: #ff4d4d; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; line-height: 1.6; }
+        
+        .container { max-width: 1300px; margin: 0 auto; }
+        
+        /* Headers & Panels */
+        h1 { color: var(--accent); letter-spacing: 1px; margin-bottom: 5px; }
+        .panel { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #222; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* Inputs */
+        .input-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1f1f1f; color: white; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+        
+        /* Buttons */
+        .btn-main { background: var(--accent); color: #000; font-weight: bold; border: none; cursor: pointer; }
+        .btn-main:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn-sec { background: #333; color: #fff; border: none; cursor: pointer; font-size: 0.8rem; }
+        .btn-sec:hover { background: #444; }
+
+        /* Search & Stats */
+        .search-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 15px; }
+        .search-bar { flex: 2; min-width: 250px; font-size: 1.1rem; border-color: #444; }
+        .stats { font-size: 0.85rem; color: #888; margin-top: 10px; }
+
+        /* Grid - Performance Optimized */
+        .media-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 25px; 
+            margin-top: 20px;
+        }
+        
+        .card { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid #222; transition: 0.3s; position: relative; }
+        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
+        .card img { width: 100%; height: 260px; object-fit: cover; background: #222; display: block; }
+        .card-info { padding: 12px; }
+        .card-info h3 { margin: 0; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-info p { font-size: 0.8rem; color: #999; margin: 4px 0; }
+        
+        .badge { position: absolute; top: 10px; left: 10px; font-size: 0.7rem; padding: 4px 8px; border-radius: 5px; background: rgba(0,0,0,0.8); border: 1px solid var(--accent); text-transform: capitalize; }
+        
+        .del-btn { color: var(--danger); background: none; border: 1px solid #333; width: 100%; padding: 6px; margin-top: 10px; font-size: 0.75rem; cursor: pointer; }
+        .del-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+        #toTop { position: fixed; bottom: 30px; right: 30px; background: var(--accent); color: black; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer; display: none; z-index: 100; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎬 MediaVault Pro</h1>
+    <p style="color: #666; margin-top: -10px; margin-bottom: 25px;">Personal Movie & Series Archive</p>
+
+    <div class="panel">
+        <div class="input-group">
+            <input type="text" id="title" placeholder="Entry Name">
+            <input type="number" id="year" placeholder="Year">
+            <input type="text" id="image" placeholder="Image Link (URL)">
+            <select id="type">
+                <option value="movie">Movie</option>
+                <option value="series">Series</option>
+            </select>
+            <select id="status">
+                <option value="watchlist">Watchlist</option>
+                <option value="continue">Continue Watching</option>
+                <option value="finished">Finished</option>
+            </select>
+            <button class="btn-main" onclick="addMedia()">Add Entry</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="search-row">
+            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Search your library..." onkeyup="render()">
+            <select id="filterType" onchange="render()" style="flex: 0.5;">
+                <option value="all">Everything</option>
+                <option value="movie">Movies</option>
+                <option value="series">Series</option>
+            </select>
+            <select id="filterStatus" onchange="render()" style="flex: 0.5;">
+                <option value="all">All Status</option>
+                <option value="watchlist">Watchlist</option>
+                <option value="continue">Continue</option>
+                <option value="finished">Finished</option>
+            </select>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <button class="btn-sec" onclick="setSort('name')">Sort A-Z</button>
+                <button class="btn-sec" onclick="setSort('year')">Sort by Date</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-sec" onclick="exportData()">💾 Export Backup</button>
+                <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Import Backup</button>
+                <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+            </div>
+        </div>
+        <div class="stats" id="statsText">Initializing...</div>
+    </div>
+
+    <div class="media-grid" id="grid"></div>
+</div>
+
+<button id="toTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+<script>
+    // DATA CORE
+    let myMedia = JSON.parse(localStorage.getItem('MV_PRO_DATA')) || [];
+    let currentSort = 'name';
+
+    // ADD FUNCTION
+    function addMedia() {
+        const title = document.getElementById('title').value;
+        const year = document.getElementById('year').value;
+        const image = document.getElementById('image').value || 'https://via.placeholder.com/200x300?text=No+Poster';
+        const type = document.getElementById('type').value;
+        const status = document.getElementById('status').value;
+
+        if(!title) return alert("Please enter a title!");
+
+        const newItem = { id: Date.now(), title, year, image, type, status };
+        myMedia.push(newItem);
+        saveAndRender();
+        
+        // Reset inputs
+        document.getElementById('title').value = '';
+        document.getElementById('year').value = '';
+        document.getElementById('image').value = '';
+    }
+
+    // DELETE FUNCTION
+    function deleteMedia(id) {
+        if(confirm("Permanently delete this entry?")) {
+            myMedia = myMedia.filter(item => item.id !== id);
+            saveAndRender();
+        }
+    }
+
+    // SYNC FUNCTIONS (The 'Cloud-less' Sync)
+    function exportData() {
+        if(myMedia.length === 0) return alert("Nothing to export!");
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myMedia));
+        const dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute("href", dataStr);
+        dlAnchor.setAttribute("download", `vault_backup_${new Date().toLocaleDateString()}.json`);
+        document.body.appendChild(dlAnchor);
+        dlAnchor.click();
+        dlAnchor.remove();
+    }
+
+    function importData(event) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (confirm(`Replace your vault with these ${imported.length} items?`)) {
+                    myMedia = imported;
+                    saveAndRender();
+                }
+            } catch (err) { alert("Invalid backup file."); }
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+
+    // RENDER LOGIC
+    function saveAndRender() {
+        localStorage.setItem('MV_PRO_DATA', JSON.stringify(myMedia));
+        render();
+    }
+
+    function setSort(val) {
+        currentSort = val;
+        render();
+    }
+
+    function render() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const typeF = document.getElementById('filterType').value;
+        const statusF = document.getElementById('filterStatus').value;
+        const grid = document.getElementById('grid');
+
+        let filtered = myMedia.filter(item => {
+            const matchesSearch = item.title.toLowerCase().includes(query);
+            const matchesType = (typeF === 'all' || item.type === typeF);
+            const matchesStatus = (statusF === 'all' || item.status === statusF);
+            return matchesSearch && matchesType && matchesStatus;
+        });
+
+        filtered.sort((a, b) => {
+            if(currentSort === 'name') return a.title.localeCompare(b.title);
+            return b.year - a.year;
+        });
+
+        document.getElementById('statsText').innerText = `Displaying ${filtered.length} of ${myMedia.length} total entries`;
+
+        grid.innerHTML = filtered.map(item => `
+            <div class="card">
+                <div class="badge">${item.status}</div>
+                <img src="${item.image}" loading="lazy" onerror="this.src='https://via.placeholder.com/200x300?text=Error+Loading'">
+                <div class="card-info">
+                    <h3>${item.title}</h3>
+                    <p>${item.year} | ${item.type.toUpperCase()}</p>
+                    <button class="del-btn" onclick="deleteMedia(${item.id})">Remove</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // UX IMPROVEMENTS
+    window.onscroll = () => {
+        document.getElementById("toTop").style.display = (window.scrollY > 400) ? "block" : "none";
+    };
+
+    render();
+</script>
+</body>
+</html>
